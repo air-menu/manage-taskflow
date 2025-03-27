@@ -1,10 +1,22 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, Pressable } from 'react-native';
 import { useTaskStore } from '@/stores/taskStore';
 import { Plus, Trash2 } from 'lucide-react-native';
 
 export default function TasksScreen() {
   const { tasks, isLoading, error, fetchTasks, deleteTask, updateTask } = useTaskStore();
+  const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
+
+  const toggleTaskSelection = (taskId: string) => {
+    setSelectedTasks((prev) =>
+      prev.includes(taskId) ? prev.filter((id) => id !== taskId) : [...prev, taskId]
+    );
+  };
+
+  const deleteSelectedTasks = () => {
+    selectedTasks.forEach((taskId) => deleteTask(taskId));
+    setSelectedTasks([]);
+  };
 
   useEffect(() => {
     fetchTasks();
@@ -34,8 +46,12 @@ export default function TasksScreen() {
         renderItem={({ item }) => (
           <View style={styles.taskItem}>
             <Pressable
+              onLongPress={() => toggleTaskSelection(item.id)}
               onPress={() => updateTask(item.id, { completed: !item.completed })}
-              style={styles.taskContent}>
+              style={[
+                styles.taskContent,
+                selectedTasks.includes(item.id) && styles.selectedTask,
+              ]}>
               <Text style={[
                 styles.taskTitle,
                 item.completed && styles.completedTask
@@ -53,6 +69,13 @@ export default function TasksScreen() {
           </View>
         )}
       />
+      {selectedTasks.length > 0 && (
+        <Pressable
+          style={styles.deleteSelectedButton}
+          onPress={deleteSelectedTasks}>
+          <Text style={styles.deleteSelectedText}>Delete Selected</Text>
+        </Pressable>
+      )}
       <Pressable style={styles.fab} testID='add-button'>
         <Plus size={24} color="#FFFFFF" />
       </Pressable>
@@ -119,5 +142,25 @@ const styles = StyleSheet.create({
     color: '#FF3B30',
     textAlign: 'center',
     marginTop: 16,
+  },
+  selectedTask: {
+    backgroundColor: '#D1E7FF',
+  },
+  deleteSelectedButton: {
+    position: 'absolute',
+    bottom: 90,
+    right: 24,
+    backgroundColor: '#FF3B30',
+    padding: 12,
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  deleteSelectedText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
   },
 });
